@@ -78,6 +78,9 @@ var TimeLine=new Class({
 	version: '1.11',
 	canvas:null,
 	boxes:null,
+	overlays:null,
+	scroller:null,
+	inCont:null,
 	ctx:null,
 	engine:null,
 	projects:[],
@@ -109,31 +112,72 @@ var TimeLine=new Class({
 		 });
 		 $(this.options.containerId).addClass("timeline");
 		 var sx={width:size.width,height:size.height};
-		 this.canvas=new Canvas(this.options.containerId+"_canvas",sx).injectInside($(this.options.containerId))
+		 this.scroller=new Element("div",{
+		 	'id': this.options.containerId + "_scroller",
+		 	'styles':{
+				'overflow':'hidden',
+				'width':sx.width+'px',
+				'height':sx.height+'px',
+				'clip':'rect(0px,0px,'+sx.width+'px,'+sx.height+'px)'
+			 }}).injectInside($(this.options.containerId));
+		 this.inCont=new Element("div",{
+		 	'id': this.options.containerId + "_scrollerIn",
+		 	'styles':{
+				'position':'relative',
+				'top':'0px',
+				'left':'0px',
+				'overflow':'show',
+				'width':'100%',
+				'height':'100%'
+			 }}).injectInside(this.scroller);
+		 this.canvas=new Canvas(this.options.containerId+"_canvas",sx).injectInside(this.inCont);
 		 this.canvas.setStyles({
 			'position':'absolute',
 			'top':'0px',
 			'left':'0px',
 			'z-index':'1',
-			'overflow':'hidden',
-			'width':sx.width+'px',
-			'height':sx.height+'px',
+			'overflow':'show',
+			'width':'100%',
+			'height':'100%',
 			'background-color':'#FFFFFF'
 		 });
 		 this.ctx=this.canvas.getContext('2d');
 		 this.boxes=new Element("div", {
-		 	id: this.options.containerId + "_boxes"
-		 }).injectInside($(this.options.containerId))
-		 this.boxes.setStyles({
-			'position':'absolute',
-			'top':'0px',
-			'left':'0px',
-			'z-index':'2',
-			'overflow':'hidden',
-			'width':sx.width+'px',
-			'height':sx.height+'px'
-		 });
-		 this.load(this.options.dataPath,this.options.params);
+		 	'id': this.options.containerId + "_boxes",
+			'styles':{
+				'position':'absolute',
+				'top':'0px',
+				'left':'0px',
+				'z-index':'2',
+				'overflow':'show',
+				'width':'100%',
+				'height':'100%'
+			 }}).injectInside(this.inCont);
+		 $(this.options.containerId).addEvent("mousemove",this.drawMouse.bind(this));
+		this.load(this.options.dataPath,this.options.params);
+	},
+	drawMouse:function(evt){
+		var evt=new Event(evt);
+		var elemDay=null;
+		var size=$(this.options.containerId).getCoordinates();
+		var sz=this.options.style.dayWidth;
+		if(!this.boxes.getElement("#dayOver")){
+			elemDay=new Element("img",{
+				'id':'dayOver',
+				'src':'./images/dayShow.png',
+				'styles':{
+					'z-index':'-1',
+					'width':sz+'px',
+					'position':'absolute',
+					'height':size.height+'px'
+				}
+			}).injectInside(this.boxes);
+		}
+		elemDay=this.boxes.getElement("#dayOver");
+		var inct=this.inCont.getPosition();
+		var pos=evt.client.x-(inct.x)-(sz/2);
+		var posGap=Math.round(pos/this.options.style.dayWidth)*this.options.style.dayWidth;
+		elemDay.setStyle('left',posGap+'px');
 	},
 	load:function(dataPath,params){
 		dataPath=dataPath || this.options.dataPath;
@@ -144,6 +188,7 @@ var TimeLine=new Class({
 		if(response){
 			this.initValues(response);
 			this.draw();
+			this.goToDate(new Date(Math.min(new Date().getTime(),this.maxDate.getTime())));
 		}else{
 			
 		}
@@ -152,21 +197,29 @@ var TimeLine=new Class({
 		this.boxes.empty();
 		var sx=this.boxes.getSize().scrollSize;
 		var sxPos=$(this.options.containerId).getPosition();
-		this.canvas.setProperty("width",sx.x);
-		this.canvas.setProperty("height",sx.y);
+		this.canvas.setProperty("width",sx.x*4);
+		this.canvas.setProperty("height",sx.y*2);
 		this.canvas.setStyles({
-			'width':sx.x+'px',
-			'height':sx.y+'px'
+			'width':sx.x*4+'px',
+			'height':sx.y*2+'px'
 		});
-		this.ctx.clearRect(0,0,sx.x,sx.y);
+		this.ctx.clearRect(0,0,sx.x*4,sx.y*2);
 		this.ctx.lineCapp  = "butt";
+	},
+	goToDate:function(inDate){
+		var one_day=1000*60*60*24;
+		var minDatePos=128+Math.round(((inDate.getTime()-this.minDate.getTime())/one_day)*this.options.style.dayWidth);
+		var size=$(this.options.containerId).getCoordinates();
+		minDatePos-=Math.round(size.width/2);
+		var fxPos=this.inCont.getStyle("left").toInt();
+		this.inCont.effect("left").start(fxPos,-minDatePos)
 	},
 	drawMonths:function(){
 		var sx=this.boxes.getSize().scrollSize;
 		var one_day=1000*60*60*24;
 		var months=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"]
 		var date=Math.floor((this.minDate.getTime()-(one_day*(128/this.options.style.dayWidth)))/one_day)*one_day;
-		for(var k=0;k<sx.x;k+=this.options.style.dayWidth){
+		for(var k=0;k<sx.x*4;k+=this.options.style.dayWidth){
 			this.ctx.beginPath();
 			var dtn=new Date(date+one_day)
 			if(dtn.getDate()==1){
@@ -181,7 +234,7 @@ var TimeLine=new Class({
 				this.ctx.strokeStyle = "rgba(0, 0, 0,.2)";
 			    this.ctx.lineWidth  = 1;
 				this.ctx.moveTo(k,0);
-				this.ctx.lineTo(k,sx.y);
+				this.ctx.lineTo(k,sx.y*2);
 				this.ctx.stroke();
 			}
 			date+=one_day;
@@ -191,7 +244,7 @@ var TimeLine=new Class({
 		var sx=this.boxes.getSize().scrollSize;
 		var one_day=1000*60*60*24;
 		var date=Math.floor((this.minDate.getTime()-(one_day*(128/this.options.style.dayWidth)))/one_day)*one_day;
-		for(var k=0;k<sx.x;k+=this.options.style.dayWidth){
+		for(var k=0;k<sx.x*4;k+=this.options.style.dayWidth){
 			this.ctx.beginPath();
 			var dt=new Date(date);
 			var dtn=new Date(date+one_day)
@@ -207,12 +260,12 @@ var TimeLine=new Class({
 				}).setHTML(dt.getDate()).injectInside(this.boxes);
 				var dtPos=mDiv.getCoordinates();
 				this.ctx.fillStyle = 'rgba(0,0,0,.1)';
-				var tx=this.canvas.roundedRectangle(dtPos.left-4,dtPos.top,dtPos.width+8,dtPos.height,5);
+				var tx=this.canvas.roundedRectangle(dtPos.left-10,dtPos.top-6,dtPos.width+8,dtPos.height,5);
 				this.ctx.fill();
 				this.ctx.strokeStyle = "rgba(0, 0, 0,.1)";
 			    this.ctx.lineWidth  = 1;
 				this.ctx.moveTo(k,0);
-				this.ctx.lineTo(k,sx.y);
+				this.ctx.lineTo(k,sx.y*2);
 				this.ctx.stroke();
 			}
 			date+=one_day;
@@ -222,13 +275,13 @@ var TimeLine=new Class({
 		var sx=this.boxes.getSize().scrollSize;
 		var one_day=1000*60*60*24;
 		var date=Math.floor((this.minDate.getTime()-(one_day*(128/this.options.style.dayWidth)))/one_day)*one_day;
-		for(var k=0;k<sx.x;k+=this.options.style.dayWidth){
+		for(var k=0;k<sx.x*4;k+=this.options.style.dayWidth){
 			this.ctx.beginPath();
 			var dt=new Date(date);
 			this.ctx.strokeStyle = "rgba(0, 0, 0,.065)";
 		    this.ctx.lineWidth  = 1;
 			this.ctx.moveTo(k,0);
-			this.ctx.lineTo(k,sx.y);
+			this.ctx.lineTo(k,sx.y*2);
 			this.ctx.stroke();
 			date+=one_day;
 		}
@@ -239,17 +292,17 @@ var TimeLine=new Class({
 		this.drawWeeks();
 		this.drawMonths()
 		this.ctx.fillStyle = "rgba(255, 255, 255,.7)";
-		this.ctx.fillRect(0,0,sx.x,40);
+		this.ctx.fillRect(0,0,sx.x*4,40);
 		this.ctx.strokeStyle = "rgba(0, 0, 0,.3)";
 	    this.ctx.lineWidth  = 1;
 		this.ctx.moveTo(0,40);
-		this.ctx.lineTo(sx.x,40);
+		this.ctx.lineTo(sx.x*4,40);
 		this.ctx.stroke();
 		var lingrad2 = this.ctx.createLinearGradient(0,40,0,45);
   		lingrad2.addColorStop(0, 'rgba(0,0,0,.2)');
   		lingrad2.addColorStop(1, 'rgba(0,0,0,0)');
 		this.ctx.fillStyle = lingrad2;
-		this.ctx.fillRect(0,40,sx.x,5);
+		this.ctx.fillRect(0,40,sx.x*4,5);
 	},
 	drawConnection:function(from,to){
 		if(from){
@@ -269,18 +322,23 @@ var TimeLine=new Class({
 			}
 			var step=mh/(to.dependencies+1);
 			toM = toPos.top + (to.arrows*step);
-			var firstPosX=Math.round((toPos.left+(((toPos.left+fromPos.right))/2))/2);
+			fromM-=6;
+			toM-=6;
+			var fromR=fromPos.right-6
+			var toL=toPos.left-6
+			var firstPosX=Math.round((toL+(((toL+fromR))/2))/2);
 			var firstPosY=Math.round(fromM);
-			var secondPosX=Math.round((fromPos.right+(((toPos.left+fromPos.right))/2))/2);
+			var secondPosX=Math.round((fromR+(((toL+fromR))/2))/2);
 			var secondPosY=Math.round(toM);
+			
 			this.ctx.beginPath();
 			this.ctx.strokeStyle = "rgb(255, 255, 255)";
 			this.ctx.fillStyle = this.ctx.strokeStyle;
 		    this.ctx.lineWidth  = 3;
-			this.ctx.moveTo(Math.round(fromPos.right),Math.round(fromM));
-			this.ctx.bezierCurveTo(firstPosX, firstPosY, secondPosX, secondPosY, Math.round(toPos.left), Math.round(toM));
+			this.ctx.moveTo(Math.round(fromR),Math.round(fromM));
+			this.ctx.bezierCurveTo(firstPosX, firstPosY, secondPosX, secondPosY, Math.round(toL), Math.round(toM));
 			this.ctx.stroke();
-			this.drawArrow(toPos.left+4,Math.round(toM),7);
+			this.drawArrow(toL+4,Math.round(toM),7);
 			this.ctx.beginPath();
 			if(!from.hasClass("projectBox")){
 				this.ctx.strokeStyle = fromClass=="bad"?"rgb(128, 0, 0)":fromClass=="good"?"rgb(0, 128, 0)":"rgb(0, 0, 0)";	
@@ -289,10 +347,10 @@ var TimeLine=new Class({
 			}
 			this.ctx.fillStyle=this.ctx.strokeStyle;
 		    this.ctx.lineWidth  = 1;
-			this.ctx.moveTo(Math.round(fromPos.right),Math.round(fromM));
-			this.ctx.bezierCurveTo(firstPosX, firstPosY, secondPosX, secondPosY, Math.round(toPos.left), Math.round(toM));
+			this.ctx.moveTo(Math.round(fromR),Math.round(fromM));
+			this.ctx.bezierCurveTo(firstPosX, firstPosY, secondPosX, secondPosY, Math.round(toL), Math.round(toM));
 			this.ctx.stroke();
-			this.drawArrow(toPos.left+3,Math.round(toM),5);
+			this.drawArrow(toL+3,Math.round(toM),5);
 		}
 	},
 	drawArrow:function(x,y,size){
