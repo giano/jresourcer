@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "resourcer", "..\..\WebSites\resourcer\", "{4EC586E9-6422-47D2-9F64-F256F8F36D45}"
+	ProjectSection(WebsiteProperties) = preProject
+		TargetFramework = "3.5"
+		Debug.AspNetCompiler.VirtualPath = "/resourcer"
+		Debug.AspNetCompiler.PhysicalPath = "..\..\WebSites\resourcer\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\resourcer\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/resourcer"
+		Release.AspNetCompiler.PhysicalPath = "..\..\WebSites\resourcer\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\resourcer\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		VWDPort = "1423"
+		DefaultWebSiteLanguage = "Visual Basic"
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|.NET = Debug|.NET
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4EC586E9-6422-47D2-9F64-F256F8F36D45}.Debug|.NET.ActiveCfg = Debug|.NET
+		{4EC586E9-6422-47D2-9F64-F256F8F36D45}.Debug|.NET.Build.0 = Debug|.NET
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
