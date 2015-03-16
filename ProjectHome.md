@@ -1,0 +1,1 @@
+allow coordination and visualization of interconnecting projects, resources and tasks. based on mootools and canvas.
